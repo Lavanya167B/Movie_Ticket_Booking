@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Movie</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    .container { max-width: 800px; margin: 2em auto; padding: 1em; }
+    .form-group { margin-bottom: 1em; }
+    input, select, textarea { width: 100%; padding: 0.5em; font-size: 1em; }
+    label { font-weight: bold; }
+    button { background-color: #4CAF50; color: white; padding: 0.5em 1em; border: none; font-size: 1em; cursor: pointer; }
+    button:hover { background-color: #45a049; }
+    .back-button { position: absolute; top: 1em; left: 1em; background-color: #f44336; padding: 0.5em 1em; color: white; border: none; cursor: pointer; font-size: 1em; }
+    .back-button:hover { background-color: blue; }
+  </style>
+</head>
+<body>
+  <!-- Back Button -->
+  <button class="back-button" onclick="window.location.href='admin.html'">Back</button>
+
+  <div class="container">
+    <h1>Add New Movie</h1>
+    <form id="movie-form">
+      <div class="form-group">
+        <label for="title">Movie Title</label>
+        <input type="text" id="title" name="title" required>
+      </div>
+      <div class="form-group">
+        <label for="language">Language</label>
+        <input type="text" id="language" name="language" required>
+      </div>
+      <div class="form-group">
+        <label for="poster-path">Poster File Path</label>
+        <input type="text" id="poster-path" name="poster-path" required>
+      </div>
+      <div class="form-group">
+        <label for="trailer-path">Trailer File Path</label>
+        <input type="text" id="trailer-path" name="trailer-path" required>
+      </div>
+      <div class="form-group">
+        <label for="duration">Movie Duration (in minutes)</label>
+        <input type="number" id="duration" name="duration" required>
+      </div>
+      <div class="form-group">
+        <label for="rating">Initial Rating</label>
+        <input type="number" id="rating" name="rating" value="5" min="1" max="10" required>
+      </div>
+      <button type="submit">Add Movie</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById("movie-form").addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const title = document.getElementById("title").value;
+      const language = document.getElementById("language").value;
+      const posterPathInput = document.getElementById("poster-path").value;
+      const trailerPathInput = document.getElementById("trailer-path").value;
+      const duration = document.getElementById("duration").value;
+      const rating = document.getElementById("rating").value;
+
+      const movieData = {
+        title,
+        language,
+        posterPath: `/assets/${posterPathInput}`,
+        trailerPath: `/assets/${trailerPathInput}`,
+        duration,
+        rating
+      };
+
+      try {
+        const response = await fetch("http://localhost:3000/movies/add", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(movieData),
+        });
+
+        if (response.ok) {
+          alert("Movie added successfully!");
+          document.getElementById("movie-form").reset();
+        } else {
+          alert("Error adding movie.");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    });
+  </script>
+</body>
+</html>

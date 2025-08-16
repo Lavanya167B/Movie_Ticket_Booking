@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Allocate Theatre to Movie</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 5em auto;
+            padding: 1em;
+        }
+
+        .movie-list {
+            display: flex;
+            flex-wrap: wrap;
+            top: 10em;
+            gap: 5em;
+            justify-content: flex-start;
+        }
+
+        .movie {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            text-align: center;
+            margin-bottom: 1.5em;
+        }
+
+        .movie img {
+            width: 300px;
+            height: 300px;
+            object-fit: cover;
+            margin-bottom: 0.5em;
+        }
+
+        /* The modal container */
+        .theatre-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .theatre-modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 50%;
+            text-align: center;
+        }
+
+        .theatre-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .theatre-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+        }
+
+        .theatre-list input {
+            margin-right: 10px;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 1em;
+            left: 1em;
+            background-color: #f44336;
+            padding: 0.5em 1em;
+            color: white;
+            border: black;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .back-button:hover {
+            background-color: blue;
+        }
+
+        .close-modal {
+            background-color: red;
+            color: white;
+            padding: 0.5em 1em;
+            cursor: pointer;
+            border: none;
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+
+        .close-modal:hover {
+            background-color: darkred;
+        }
+
+        #allocate-btn {
+            margin-top: 20px;
+            background-color: green;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+        }
+
+        #allocate-btn:hover {
+            background-color: darkgreen;
+        }
+    </style>
+</head>
+
+<body>
+
+    <button class="back-button" onclick="window.location.href='admin.html'">Back</button>
+
+    <div class="container">
+        <!-- Movie List -->
+        <div class="movie-list" id="movie-list"></div>
+    </div>
+
+    <!-- Modal for Theatre Allocation -->
+    <div class="theatre-modal" id="theatre-modal">
+        <div class="theatre-modal-content">
+            <h2>Select Theatres for Movie</h2>
+            <div class="theatre-list" id="theatre-list"></div>
+            <button id="allocate-btn">Allocate Theatres</button>
+            <button class="close-modal" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        let selectedMovieId = null;
+        let selectedTheatres = [];
+
+        // Fetch all movies and display them
+        async function fetchMovies() {
+            try {
+                const response = await fetch('http://localhost:3000/all-movies');
+                const movies = await response.json();
+                const movieList = document.getElementById('movie-list');
+                movieList.innerHTML = '';
+
+                movies.forEach(movie => {
+                    const movieDiv = document.createElement('div');
+                    movieDiv.classList.add('movie');
+                    movieDiv.innerHTML = `
+                        <img src="${movie.poster}" alt="${movie.title}" onclick="selectMovie('${movie._id}')">
+                        <div onclick="selectMovie('${movie._id}')">${movie.title}</div>
+                    `;
+                    movieList.appendChild(movieDiv);
+                });
+            } catch (error) {
+                console.error('Error fetching movies:', error);
+            }
+        }
+
+        // Handle movie selection and show the modal
+        function selectMovie(movieId) {
+            selectedMovieId = movieId;
+            document.getElementById('theatre-modal').style.display = 'flex';
+            fetchTheatres(); // Fetch theatres for the selected movie
+        }
+
+        // Close the modal
+        function closeModal() {
+            document.getElementById('theatre-modal').style.display = 'none';  // Hide the modal
+        }
+
+        // Fetch theatres with empty current_movie
+        async function fetchTheatres() {
+            try {
+                const response = await fetch('http://localhost:3000/empty-theatre');
+                const theatres = await response.json();
+                const theatreList = document.getElementById('theatre-list');
+                theatreList.innerHTML = '';
+
+                if (theatres.length === 0) {
+                    const noTheatresMessage = document.createElement('div');
+                    noTheatresMessage.style.color = 'red';
+                    noTheatresMessage.style.textAlign = 'center';
+                    noTheatresMessage.textContent = 'No empty theatres available';
+                    theatreList.appendChild(noTheatresMessage);
+                } else {
+                    theatres.forEach(theatre => {
+                        const theatreDiv = document.createElement('div');
+                        theatreDiv.classList.add('theatre-item');
+                        theatreDiv.innerHTML = `
+                            <label>
+                                <input type="checkbox" value="${theatre._id}" onchange="toggleTheatreSelection('${theatre._id}')">
+                                ${theatre.name} - ${theatre.location}
+                            </label>
+                        `;
+                        theatreList.appendChild(theatreDiv);
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching theatres:', error);
+            }
+        }
+
+        // Toggle theatre selection
+        function toggleTheatreSelection(theatreId) {
+            const index = selectedTheatres.indexOf(theatreId);
+            if (index === -1) {
+                selectedTheatres.push(theatreId);
+            } else {
+                selectedTheatres.splice(index, 1);
+            }
+        }
+
+        // Allocate selected theatres to the movie
+        async function allocateTheatres() {
+            try {
+                const response = await fetch('http://localhost:3000/allocate-theatre', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        movieId: selectedMovieId,
+                        theatreIds: selectedTheatres
+                    })
+                });
+                const result = await response.json();
+                alert(result.message);  // Show success or error message
+                closeModal();  // Close the modal after allocation
+            } catch (error) {
+                console.error('Error allocating theatres:', error);
+            }
+            window.location.reload()
+        }
+
+        document.getElementById('allocate-btn').addEventListener('click', allocateTheatres);
+
+        fetchMovies();  // Load movies when the page loads
+    </script>
+
+</body>
+
+</html>

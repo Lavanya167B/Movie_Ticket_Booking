@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Movie</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .movie-card {
+            width: 200px;
+            height: 300px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .movie-card img {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 1em;
+            left: 1em;
+            background-color: #f44336;
+            padding: 0.5em 1em;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .back-button:hover {
+            background-color: blue;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100">
+    <button class="back-button" onclick="window.location.href='admin.html'">Back</button>
+
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold text-center">Delete Movie</h1>
+        <div id="movies-list" class="flex flex-wrap justify-center mt-6">
+            <!-- Movie Cards will be injected here -->
+        </div>
+    </div>
+
+    <script>
+        // Fetch all movies from backend and display them
+        async function fetchMovies() {
+            const response = await fetch('http://localhost:3000/all-movies');
+            const movies = await response.json();
+
+            const moviesList = document.getElementById('movies-list');
+            moviesList.innerHTML = ''; // Clear previous content
+
+            movies.forEach(movie => {
+                const movieCard = document.createElement('div');
+                movieCard.classList.add('movie-card', 'bg-white', 'shadow-lg', 'hover:shadow-xl', 'transition-shadow', 'duration-300');
+                movieCard.setAttribute('data-id', movie._id);
+
+                movieCard.innerHTML = `
+          <img src="${movie.poster}" alt="${movie.title}" />
+          <div class="text-center mt-2">
+            <p class="font-semibold">${movie.title}</p>
+          </div>
+        `;
+
+                movieCard.addEventListener('click', () => deleteMovie(movie._id));
+
+                moviesList.appendChild(movieCard);
+            });
+        }
+
+        // Delete the movie and update the theaters
+        async function deleteMovie(movieId) {
+            try {
+                const confirmation = confirm('Are you sure you want to delete this movie?');
+                if (confirmation) {
+                    const response = await fetch(`http://localhost:3000/delete-movie/${movieId}`, {
+                        method: 'DELETE',
+                    });
+
+                    if (response.ok) {
+                        alert('Movie deleted successfully');
+                        fetchMovies(); // Refresh the movie list
+                    } else {
+                        alert('Failed to delete the movie');
+                    }
+                }
+            } catch (error) {
+                console.error('Error deleting movie:', error);
+                alert('Error deleting movie');
+            }
+        }
+
+        // Initialize the movie list
+        fetchMovies();
+    </script>
+</body>
+
+</html>

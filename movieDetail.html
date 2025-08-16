@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Details</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      max-width: 800px;
+      width: 100%;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .header {
+      margin-bottom: 20px;
+    }
+
+    .header button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .header button:hover {
+      background-color: red;
+    }
+
+    .movie-details {
+      margin-top: 20px;
+    }
+
+    #moviePoster img {
+      width: 500px;
+      height: 500px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      font-size: 28px;
+      margin: 20px 0;
+    }
+
+    p {
+      font-size: 18px;
+      margin: 10px 0;
+    }
+
+    .rating-section input {
+      padding: 10px;
+      font-size: 16px;
+      width: 200px;
+      margin: 10px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+    }
+
+    .rating-section button {
+      padding: 10px 20px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-left: 10px;
+    }
+
+    .rating-section button:hover {
+      background-color: #218838;
+    }
+
+    .book-now-button {
+      padding: 15px 30px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+
+    .book-now-button:hover {
+      background-color: green;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="movie-details">
+      <div id="moviePoster">
+        <img src="" alt="Movie Poster" id="posterImage">
+      </div>
+      <h2 id="movieTitle"></h2>
+      <p><strong>Trailer:</strong> <a href="" id="movieTrailer" target="_blank">Watch Trailer</a></p>
+      <p><strong>Rating:</strong> <span id="movieRating"></span></p>
+
+      <!-- Rating Section -->
+      <div class="rating-section">
+        <input type="number" id="movieRatingInput" min="1" max="10" step="0.1" placeholder="Enter your rating (1-10)">
+        <button onclick="submitRating()">Rate Movie</button>
+      </div>
+
+      <button class="book-now-button" onclick="window.location.href = 'seating.html?id=' + movieId;">Book Now</button>
+      <div class="header">
+        <button onclick="window.location.href = 'index.html';">Back to Movies</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Extract the movie ID from the URL
+    const movieId = new URLSearchParams(window.location.search).get("id");
+
+    // Function to fetch movie details
+    async function fetchMovieDetails() {
+      try {
+        const movieResponse = await fetch(`http://localhost:3000/movie-details/${movieId}`);
+        const movieData = await movieResponse.json();
+
+        // Populate the movie details
+        document.getElementById('posterImage').src = movieData.poster;
+        document.getElementById('movieTitle').innerText = movieData.title;
+        document.getElementById('movieTrailer').href = movieData.trailer;
+        document.getElementById('movieRating').innerText = movieData.rating.toFixed(1);
+      } catch (error) {
+        console.error('Error fetching movie details:', error);
+      }
+    }
+
+    // Function to submit the rating
+    async function submitRating() {
+      const newRating = parseFloat(document.getElementById('movieRatingInput').value);
+      if (isNaN(newRating) || newRating < 1 || newRating > 10) {
+        alert('Please enter a valid rating between 1 and 10.');
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:3000/movie-rating/${movieId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ rating: newRating }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          alert('Rating updated successfully!');
+        } else {
+          alert('Error updating rating.');
+        }
+        window.location.reload()
+      } catch (error) {
+        console.error('Error submitting rating:', error);
+      }
+    }
+
+    // Fetch movie details on page load
+    fetchMovieDetails();
+  </script>
+</body>
+
+</html>

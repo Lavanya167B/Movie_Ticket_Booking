@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seat Selection</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            background-color: #ffffff;
+            color: #212529;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .header {
+            width: 100%;
+            text-align: center;
+            padding: 20px;
+            color: #212529;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        .theater {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .seating-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .price-label,
+        .row-label {
+            width: 50px;
+            text-align: left;
+            margin-right: 10px;
+            color: #212529;
+        }
+
+        .seat {
+            width: 30px;
+            height: 30px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        .seat.available {
+            background-color: #32cd32; /* Green */
+        }
+
+        .seat.booked {
+            background-color: #ff0000; /* Red */
+        }
+
+        .seat.selected {
+            background-color: #ffd700; /* Yellow */
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .legend span {
+            margin-right: 10px;
+        }
+
+        .center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .home-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-right: 20px;
+            margin-bottom: 10px;
+        }
+
+        .theater-selection,
+        .date-selection,
+        .timing-selection {
+            margin-bottom: 20px;
+        }
+
+        .payment-button {
+            padding: 10px 20px;
+            background-color: blueviolet;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            display: none; /* Hidden by default */
+        }
+
+        .payment-button:hover {
+            background-color: lightseagreen;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <button class="home-button" onclick="history.back()">Back</button>
+        <h2>Select Theater and Show Time</h2>
+    </div>
+
+    <!-- Theater Selection -->
+    <div class="theater-selection">
+        <label for="theater">Select Theater:</label>
+        <select id="theater" required></select>
+    </div>
+
+    <!-- Date Selection -->
+    <div class="date-selection">
+        <label for="date">Select Date:</label>
+        <input type="date" id="date" required min="" />
+
+    </div>
+
+    <!-- Show Timing Selection -->
+    <div class="timing-selection">
+        <label for="show-time">Select Show Time:</label>
+        <select id="show-time">
+            <option value="12:00 PM">12 PM</option>
+            <option value="3:00 PM">3 PM</option>
+            <option value="6:00 PM">6 PM</option>
+            <option value="9:00 PM">9 PM</option>
+        </select>
+    </div>
+
+    <!-- Show Seating Button -->
+    <button id="show-seating-button" onclick="fetchSeatStatus()">Show Seating</button>
+
+    <div class="center">
+        <div class="theater">
+            <div id="seat-container" class="seating-container"></div>
+        </div>
+    </div>
+
+    <!-- Pay Now Button -->
+    <button id="pay-now-button" class="payment-button" onclick="payNow()">Pay Now</button>
+
+    <!-- Color Legend -->
+    <div class="legend">
+        <span style='display:inline-block;width:20px;height:20px;background-color:#32cd32;'></span> Available (Green)
+        <span style='display:inline-block;width:20px;height:20px;background-color:#ff0000;'></span> Booked (Red)
+        <span style='display:inline-block;width:20px;height:20px;background-color:#ffd700;'></span> Selected (Yellow)
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+    const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+    document.getElementById('date').setAttribute('min', today);
+});
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const movieId = urlParams.get('id');
+            console.log("Movie id: ", movieId)
+            if (movieId) {
+                await fetchTheaters(movieId);
+            }
+        });
+
+        let theaters = [];
+
+        async function fetchTheaters(movieId) {
+            try {
+                const response = await fetch(`http://localhost:3000/movie-theatres/${movieId}`);
+                const theaterData = await response.json();
+                if (Array.isArray(theaterData)) {
+                    theaters = theaterData;
+                    const theaterSelect = document.getElementById('theater');
+                    theaters.forEach(theater => {
+                        const option = document.createElement('option');
+                        option.value = theater._id;
+                        option.textContent = `${theater.name} - ${theater.location}`;
+                        theaterSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching theaters:', error);
+            }
+        }
+
+        async function fetchSeatStatus() {
+            const theatreId = document.getElementById('theater').value;
+            const date = document.getElementById('date').value;
+            const showTime = document.getElementById('show-time').value;
+            const urlParams = new URLSearchParams(window.location.search);
+            const movieId = urlParams.get('id');
+
+            if (!theatreId || !date || !showTime) {
+                alert('Please select theater, date, and show time.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3000/seating-status?theatreId=${theatreId}&showTime=${showTime}&date=${date}&movieId=${movieId}`);
+                const data = await response.json();
+                console.log("Seating :  ", data)
+                if (data.seatingStatus) {
+                    generateSeats(10, 20, data.seatingStatus);
+                    document.getElementById('pay-now-button').style.display = 'block'; // Show Pay Now button
+                }
+            } catch (error) {
+                console.error('Error fetching seat status:', error);
+            }
+        }
+
+        function generateSeats(rows, cols, seatingStatus) {
+    const seatContainer = document.getElementById('seat-container');
+    seatContainer.innerHTML = ''; // Clear existing seats
+
+    for (let r = 0; r < rows; r++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'row seating-row';
+
+        const rowLabel = document.createElement('div');
+        rowLabel.className = 'row-label';
+        rowLabel.textContent = `${String.fromCharCode(65 + r)}`; // Row labels: A, B, C, etc.
+        rowDiv.appendChild(rowLabel);
+
+        for (let c = 0; c < cols; c++) {
+            const seatId = `${String.fromCharCode(65 + r)}${c + 1}`;
+            const seat = document.createElement('div');
+            seat.className = 'seat';
+            seat.dataset.seatId = seatId;
+
+            // Set seat status based on fetched data
+            const seatStatus = seatingStatus[r][c];
+            if (seatStatus === true) { // Check for true (booked)
+                seat.classList.add('booked');
+            } else {
+                seat.classList.add('available');
+                seat.addEventListener('click', () => toggleSeatSelection(seat));
+            }
+
+            rowDiv.appendChild(seat);
+        }
+
+        seatContainer.appendChild(rowDiv);
+    }
+}
+        function toggleSeatSelection(seatElement) {
+            if (seatElement.classList.contains('selected')) {
+                seatElement.classList.remove('selected');
+            } else {
+                seatElement.classList.add('selected');
+            }
+        }
+
+        function payNow() {
+            const theatreId = document.getElementById('theater').value;
+            const date = document.getElementById('date').value;
+            const showTime = document.getElementById('show-time').value;
+
+            console.log(theatreId)
+
+            const selectedSeats = [...document.querySelectorAll('.seat.selected')]
+                .map(seat => seat.dataset.seatId)
+                .join(',');
+
+            // Navigate to payNow.html with booking details
+            const urlParams = new URLSearchParams(window.location.search);
+            const movieId = urlParams.get('id');
+            window.location.href = `payNow.html?movieId=${movieId}&theatreId=${theatreId}&date=${date}&showTime=${showTime}&seats=${selectedSeats}`;
+        }
+    </script>
+</body>
+
+</html>

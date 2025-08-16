@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay Now</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        #booking-form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        span {
+            display: inline-block;
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #333;
+        }
+
+        button {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        #back-button {
+            background-color: #6c757d;
+        }
+
+        #back-button:hover {
+            background-color: #5a6268;
+        }
+
+        .loader {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 20px;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Pay Now</h1>
+    <form id="booking-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" required><br><br>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" required><br><br>
+
+        <label for="date">Date:</label>
+        <input type="date" id="date" required><br><br>
+
+        <label for="theater">Theater:</label>
+        <span id="theater"></span><br><br>
+
+        <label for="show-time">Show Time:</label>
+        <span id="show-time"></span><br><br>
+
+        <label for="seats">Selected Seats:</label>
+        <span id="seats"></span><br><br>
+
+        <label for="total-price">Total Price:</label>
+        <span id="total-price"></span><br><br>
+
+        <div class="button-container">
+            <button type="button" onclick="payNow()">Confirm Booking</button>
+            <button type="button" id="back-button" onclick="history.back()">Back</button>
+        </div>
+    </form>
+
+    <div id="loader" class="loader">Processing...</div>
+
+    <script>
+        // Extract query parameters from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const movieId = urlParams.get('movieId');
+        const theatreId = urlParams.get('theatreId');
+        const date = urlParams.get('date');
+        const showTime = urlParams.get('showTime');
+        const seats = urlParams.get('seats').split(',');
+
+        // Fetch theater details
+        async function fetchTheatreDetails(theatreId) {
+            try {
+                const response = await fetch(`http://localhost:3000/theatres/${theatreId}`);
+                const data = await response.json();
+
+                if (data.name && data.location) {
+                    document.getElementById('theater').textContent = `${data.name} - ${data.location}`;
+                } else {
+                    document.getElementById('theater').textContent = "Theater not found";
+                }
+            } catch (error) {
+                console.error('Error fetching theater details:', error);
+                document.getElementById('theater').textContent = "Error fetching theater details";
+            }
+        }
+
+        // Call the function to fetch details
+        fetchTheatreDetails(theatreId);
+
+        // Populate form fields
+        document.getElementById('show-time').textContent = showTime;
+        document.getElementById('date').value = date;
+        document.getElementById('seats').textContent = seats.join(', ');
+
+        // Calculate total price
+        const totalPrice = seats.reduce((total, seat) => {
+            const row = seat[0];
+            return total + (row >= 'A' && row <= 'E' ? 200 : 100);
+        }, 0);
+        document.getElementById('total-price').textContent = `₹${totalPrice}`;
+
+        function payNow() {
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const date = document.getElementById('date').value;
+            const theater = document.getElementById('theater').textContent;
+            const showTime = document.getElementById('show-time').textContent;
+
+            if (!name || !email || !date || !theater) {
+                alert('Please fill out all fields.');
+                return;
+            }
+
+            const selectedSeats = seats.join(', ');
+
+            const bookingData = {
+                name,
+                email,
+                date,
+                theater,
+                showTime,
+                seats: selectedSeats,
+                totalPrice
+            };
+
+            console.log(bookingData);
+
+            // Show the processing indicator
+            const loader = document.getElementById('loader');
+            loader.style.display = 'flex';
+
+            // Send booking data to the backend
+            fetch('http://localhost:3000/sendBookingDetails', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(bookingData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide the processing indicator
+                    loader.style.display = 'none';
+
+                    if (data.success) {
+                        alert('Booking confirmed! QR code sent to your email.');
+                        // Update seat availability in the backend
+                        updateSeatAvailability(movieId, theatreId, showTime, seats);
+                    } else {
+                        alert('Error sending booking details. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    // Hide the processing indicator
+                    loader.style.display = 'none';
+                    console.error('Error:', error);
+                });
+        }
+
+        function updateSeatAvailability(movieId, theatreId, showTime, seats) {
+            const date = document.getElementById('date').value;
+
+            fetch('http://localhost:3000/book-seats', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    movieId,
+                    date,
+                    theatreId: theatreId,
+                    showTime,
+                    seatNumbers: seats
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message === 'Seats booked successfully') {
+                        console.log('Seats updated successfully');
+                        window.location.href = "index.html";
+                    } else {
+                        console.error('Error updating seats:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+</body>
+
+</html>

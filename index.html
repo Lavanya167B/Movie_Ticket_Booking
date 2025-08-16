@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Ticket Booking</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    /* Navbar styling */
+    .navbar {
+      background-color: rgba(51, 51, 51, 0.8); /* Transparent navbar background */
+      overflow: hidden;
+      display: flex;
+      justify-content: space-between; /* Space between items */
+      align-items: center; /* Align items vertically */
+      padding: 0.5em 2em;
+    }
+
+    /* Nav links styling */
+    .navbar .nav-links {
+      display: flex;
+      gap: 15px;
+      color: white;
+      font-size: 1.2em;
+    }
+
+    .navbar .nav-links a {
+      color: white;
+      text-decoration: none;
+      padding: 0.5em 1em;
+      display: block;
+      cursor: pointer;
+      font-size: 1.5em; /* Increased font size */
+    }
+
+    .navbar .nav-links a:hover {
+      background-color: #575757;
+    }
+
+    /* Movie Ticket Booking heading inside navbar */
+    .navbar h1 {
+      color: white; /* Set color of the heading to white */
+      margin: 0; /* Remove margin to ensure it stays aligned */
+      font-size: 2em; /* Make the heading size larger */
+    }
+
+    
+    .container {
+      max-width: 1200px;
+      margin: 2em auto;
+      padding: 1em;
+    }
+    .movies-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1em;
+    }
+    .movie {
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+      transition: transform 0.2s ease;
+      text-align: center;
+    }
+    .movie:hover {
+      transform: scale(1.05);
+    }
+    .movie img {
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+    }
+    .movie-title {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin: 0.5em 0;
+    }
+    .movie-rating {
+      background-color: #4CAF50;
+      color: white;
+      padding: 0.5em 1em;
+      border-radius: 5px;
+      font-size: 0.9em;
+      margin-bottom: 0.5em;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar with Dynamic Signup/Login Buttons -->
+  <div class="navbar">
+    <h1>Movie Ticket Booking</h1> <!-- Movie ticket booking heading in navbar -->
+    <div class="nav-links" id="nav-links">
+      <a href="signup.html">Sign Up</a>
+      <a href="login.html">Login</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="movies-grid" id="movies"></div>
+  </div>
+
+  <script>
+    async function fetchMovies() {
+      try {
+        const response = await fetch('http://localhost:3000/top-movies');
+        if (!response.ok) throw new Error('Failed to fetch movies');
+        const movies = await response.json();
+
+        const moviesContainer = document.getElementById('movies');
+        moviesContainer.innerHTML = '';
+
+        movies.forEach(movie => {
+          const movieElement = document.createElement('div');
+          movieElement.classList.add('movie');
+          movieElement.innerHTML = `
+            <img src="${movie.poster}" alt="${movie.title}" onclick="navigateToMovie('${movie._id}')">
+            <div class="movie-title">${movie.title}</div>
+            <div class="movie-rating">Rating: ${movie.rating}</div>
+          `;
+          moviesContainer.appendChild(movieElement);
+        });
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    function navigateToMovie(movieId) {
+      window.location.href = `movieDetail.html?id=${movieId}`;
+    }
+
+    // Function to check user session and update navigation links
+    function checkUserSession() {
+      const username = sessionStorage.getItem('username');
+      const navLinks = document.getElementById('nav-links');
+      if (username) {
+        navLinks.innerHTML = `
+          <span style="color: white; font-size: 1.5em; font-weight: bold;">Welcome, ${username}!</span>  
+          <a href="#" id="logout">Logout</a>
+        `;
+
+        document.getElementById('logout').addEventListener('click', () => {
+          sessionStorage.removeItem('username');
+          window.location.href = 'index.html';
+        });
+      }
+    }
+
+
+    // Check user session on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      checkUserSession();
+      fetchMovies();
+    });
+  </script>
+</body>
+</html>

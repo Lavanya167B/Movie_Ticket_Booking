@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+      display: none; /* Hide content until authentication is complete */
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 2em auto;
+      padding: 1em;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .nav-link {
+      display: block;
+      padding: 1em;
+      margin-bottom: 1em;
+      background-color: #4CAF50;
+      color: white;
+      text-decoration: none;
+      text-align: center;
+      font-size: 1.2em;
+      border-radius: 5px;
+    }
+
+    .nav-link:hover {
+      background-color: #45a049;
+    }
+
+    .top-right-button {
+      position: absolute;
+      top: 1em;
+      right: 1em;
+      background-color: #007BFF;
+      color: white;
+      padding: 0.5em 1em;
+      font-size: 1em;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .top-right-button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Button to navigate to index.html -->
+  <button class="top-right-button" onclick="window.location.href='index.html'">Go to Home</button>
+
+  <div class="container">
+    <h1>Admin Panel</h1>
+    <a href="addMovie.html" class="nav-link">Add Movie</a>
+    <a href="deleteMovie.html" class="nav-link">Delete Movie</a>
+    <a href="addTheatre.html" class="nav-link">Add Theatre</a>
+    <a href="allocateTheatre.html" class="nav-link">Allocate Theatre</a>
+    <a href="deallocateTheatre.html" class="nav-link">Deallocate Theatre</a>
+  </div>
+
+  <script>
+    async function authenticateAdmin() {
+      let password = prompt("Enter Admin Password:");
+
+      try {
+        const response = await fetch('http://localhost:3000/admin/password'); // Fetch stored password from backend
+        const data = await response.json();
+        const storedPassword = data.password;
+
+        if (password === storedPassword) {
+          document.body.style.display = "block"; // Show page content
+        } else {
+          alert("Incorrect Password! Redirecting to Home Page.");
+          window.location.href = "index.html"; // Redirect to home page
+        }
+      } catch (error) {
+        console.error("Error fetching password:", error);
+        alert("Error connecting to the server. Redirecting...");
+        window.location.href = "index.html"; // Redirect on error
+      }
+    }
+    async function showChangePasswordPrompt() {
+      const oldPassword = prompt("Enter Old Password:");
+      const newPassword = prompt("Enter New Password:");
+
+      if (!oldPassword || !newPassword) {
+        alert("Both fields are required!");
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:3000/admin/password', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ oldPassword, newPassword })
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          alert(data.message);
+        } else {
+          alert(data.message);
+        }
+      } catch (error) {
+        console.error('Error updating password:', error);
+        alert('Error updating password');
+      }
+    }
+
+    authenticateAdmin();
+  </script>
+</body>
+
+</html>
