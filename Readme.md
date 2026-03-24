@@ -36,5 +36,5 @@ Follow these steps to run the project locally:
 
 ### 1️⃣ Clone the repository
 ```bash
-git clone https://github.com/Lavanya-2005-lav/movie-ticket-booking.git
-cd Vichitra2
+git clone https://github.com/Lavanya167B/Movie_Ticket_Booking.git
+cd Movie_Ticket_Booking
